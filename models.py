@@ -1,66 +1,87 @@
-from database import Base
-from sqlalchemy import Column, Integer, String,ForeignKey,Boolean,Text,Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Text, Float, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy_utils.types import ChoiceType
+from database import Base  # Assuming 'Base' is defined in 'database.py'
+
 class Category(Base):
-    __tablename__ = 'category'
+    __tablename__ = 'categories'
     id = Column(Integer, primary_key=True)
-    name=Column(String, nullable=False)
+    name = Column(String, nullable=False)
+    books = relationship('Books', back_populates='category')
 
     def __repr__(self):
         return f'<Category {self.id}: {self.name}>'
 
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(25), unique=True, index=True)
+    email = Column(String(100), unique=True, index=True)
+    password = Column(Text)
+    is_active = Column(Boolean, default=True)
+    is_staff = Column(Boolean, default=False)
+    reviews = relationship('Review', back_populates='user')
+
+    def __repr__(self):
+        return f"<User(username='{self.username}', email='{self.email}')>"
+
 class Books(Base):
-    BOOK_JANRE =(
-        ('FICTON', 'fiction'),
-        ('NON-FICTION','non-fiction'),
-        ('BIOGRAPHY','biography'),
-        ('THRILLER','thriller')
+    BOOK_GENRE = (
+        ('FICTION', 'fiction'),
+        ('NON-FICTION', 'non-fiction'),
+        ('BIOGRAPHY', 'biography'),
+        ('THRILLER', 'thriller')
     )
     __tablename__ = 'books'
     id = Column(Integer, primary_key=True)
-    name=Column(String, nullable=False)
-    author=Column(String, nullable=False)
-    genre=Column(ChoiceType(BOOK_JANRE), default='ficton')
-    publication_year=Column(Integer, nullable=False)
-    price=Column(Float, nullable=False)
-    description=Column(Text, nullable=False)
-    is_available=Column(Boolean, default=True)
-    book_category=Column("Category",back_populates='books')
+    name = Column(String, nullable=False)
+    author = Column(String, nullable=False)
+    genre = Column(ChoiceType(BOOK_GENRE), default='FICTION')
+    publication_year = Column(Integer, nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(Text, nullable=False)
+    is_available = Column(Boolean, default=True)
+    category_id = Column(Integer, ForeignKey('categories.id'))
+    category = relationship('Category', back_populates='books')
+    book_authors = relationship('Book_Author', back_populates='book')
+    reviews = relationship('Review', back_populates='book')
 
     def __repr__(self):
         return f'<Book {self.id}: {self.name}>'
-    
 
-
-    
 class Author(Base):
-    __tablename__ = 'author'
+    __tablename__ = 'authors'
     id = Column(Integer, primary_key=True)
-    name=Column(String, nullable=False)
-    nationality=Column(String, nullable=False)
-    birth_date=Column(String, nullable=False)
-    death_date=Column(String, nullable=True)
+    name = Column(String, nullable=False)
+    nationality = Column(String, nullable=False)
+    birth_date = Column(String, nullable=False)
+    death_date = Column(String, nullable=True)
+    book_authors = relationship('Book_Author', back_populates='author')
 
     def __repr__(self):
         return f'<Author {self.id}: {self.name}>'
-    
+
 class Book_Author(Base):
-    __tablename__ = 'book_author'
-    book = Column("Books", back_populates='book_author')
-    author = Column("Author", back_populates='book_author')
+    __tablename__ = 'book_authors'
+    id = Column(Integer, primary_key=True)
+    book_id = Column(Integer, ForeignKey('books.id'))
+    author_id = Column(Integer, ForeignKey('authors.id'))
+    book = relationship('Books', back_populates='book_authors')
+    author = relationship('Author', back_populates='book_authors')
 
     def __repr__(self):
-        return f'<Book_Author {self.book.id} - {self.author.id}>'
-    
+        return f'<Book_Author {self.book_id} - {self.author_id}>'
+
 class Review(Base):
-    __tablename__ = 'review'
+    __tablename__ = 'reviews'
     id = Column(Integer, primary_key=True)
-    comment=Column(Text, nullable=False)
-    rating=Column(Integer, nullable=False)
-    book=Column("Books",back_populates='review')
-    user=Column("User", back_populates='review')
-    
+    comment = Column(Text, nullable=False)
+    rating = Column(Integer, nullable=False)
+    book_id = Column(Integer, ForeignKey('books.id'))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    book = relationship('Books', back_populates='reviews')
+    user = relationship('User', back_populates='reviews')
+
     def __repr__(self):
         return f'<Review {self.id}: {self.comment}>'
     
